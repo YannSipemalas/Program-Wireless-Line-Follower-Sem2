@@ -81,6 +81,6 @@ const int gripperPin = 3;  // Pin untuk servo gripper
 - ESP8266WiFi → library WiFi untuk koneksi AP.
 - ESP8266WebServer → menjalankan server web pada ESP8266.
 - Servo.h → kontrol servo motor.
--Definisi pin untuk sensor garis, motor, dan servo.
+- Definisi pin untuk sensor garis, motor, dan servo.
 
 2. Library & Definisi Pin
