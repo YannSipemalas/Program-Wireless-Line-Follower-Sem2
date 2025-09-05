@@ -4,11 +4,6 @@ Pada program ini saya membuat tampilan GUI, yaitu sistem monitoring untuk mengen
 
 ![Gambar GUI_HTML](https://drive.google.com/uc?export=view&id=1NMsAt_PKSrkLzP0rNCTQL01n_uoUINiv)
 
-
-
-
-
-
 Program ini digunakan untuk mengontrol sebuah robot berbasis ESP8266 melalui jaringan wifi. Setelah ESP8266 dinyalakan, ia akan membuat jaringan wifi (Acces Point), yang dimana pengguna bisa menghubungkan HP/Laptop ke jaringan ini dan mengakses tampilan kontrol robot melalui browser dengan alamat ini :
 
 http://192.168.4.1.
