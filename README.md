@@ -55,3 +55,32 @@ Untuk menjalankan kode ini, dibutuhkan:
    1. Arduino IDE dengan ESP8266 core terinstal
    2. Arduino IDE dengan ESP8266 core terinstal
    3. Driver USB to UART (CP210X) sesuai board
+
+
+# Penjelasan Kode Wireless
+1. Library & Definisi Pin
+```cpp
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+#include <Servo.h>
+
+const int S1_sens = 14; // Sensor paling kiri
+const int S2_sens = 12; // Sensor kiri
+const int S3_sens = 13; // Sensor tengah
+const int S4_sens = 15; // Sensor kanan
+const int S5_sens = 10; // Sensor paling kanan
+
+const int pwmL = 5;   // Pin PWM motor kiri
+const int pwmR = 4;   // Pin PWM motor kanan
+const int rotL = 0;   // Pin arah motor kiri
+const int rotR = 2;   // Pin arah motor kanan
+
+const int servoPin = 16;   // Pin untuk servo lengan/kepala
+const int gripperPin = 3;  // Pin untuk servo gripper
+```
+- ESP8266WiFi → library WiFi untuk koneksi AP.
+- ESP8266WebServer → menjalankan server web pada ESP8266.
+- Servo.h → kontrol servo motor.
+-Definisi pin untuk sensor garis, motor, dan servo.
+
+2. Library & Definisi Pin
