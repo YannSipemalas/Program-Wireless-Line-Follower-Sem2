@@ -57,8 +57,10 @@ Untuk menjalankan kode ini, dibutuhkan:
    3. Driver USB to UART (CP210X) sesuai board
 
 
+
 # Penjelasan Kode Wireless
-1. Library & Definisi Pin
+|1. Library dan Definisi Pin | 
+| -------------- |
 ```cpp
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
@@ -78,9 +80,47 @@ const int rotR = 2;   // Pin arah motor kanan
 const int servoPin = 16;   // Pin untuk servo lengan/kepala
 const int gripperPin = 3;  // Pin untuk servo gripper
 ```
+
 - ESP8266WiFi → library WiFi untuk koneksi AP.
 - ESP8266WebServer → menjalankan server web pada ESP8266.
 - Servo.h → kontrol servo motor.
-- Definisi pin untuk sensor garis, motor, dan servo.
+-Definisi pin untuk sensor garis, motor, dan servo.
 
-2. Library & Definisi Pin
+| 2. Kredensial WIFI(AP) | 
+| -------------- |
+
+```cpp
+const char* ssid_ap = "ESP";
+const char* password_ap = "12345678";
+```
+Bagian ini mendefinisikan SSID dan password untuk Access Point yang dibuat oleh ESP8266.
+Jadi HP/laptop bisa konek langsung ke WiFi ESP tanpa router.
+
+- SSID WiFi: "ESP"
+- Password: "12345678"
+
+| 3. Definisi Objek Global | 
+| -------------- |
+```cpp
+ESP8266WebServer server(80);
+Servo myServo;
+Servo gripperServo;
+```
+- ESP8266WebServer server(80); → Membuat server web pada port 80 (port HTTP standar). Digunakan untuk komunikasi lewat web (control GUI atau browser).
+- Servo myServo; → Objek servo untuk arm.
+- Servo gripperServo; → Objek servo untuk gripper.
+
+| 4. Variabel Kontrol | 
+| -------------- |
+```cpp
+int leftSpeed = 0;
+int rightSpeed = 0;
+bool lineFollowerActive = false;
+bool manualControl = false;
+bool robotOn = false; // Status global robot
+```
+- leftSpeed, rightSpeed → Menyimpan kecepatan motor kiri dan kanan (0 = berhenti).
+- lineFollowerActive → true kalau mode line follower aktif.
+- manualControl → true kalau mode manual (via remote/GUI) dipakai.
+- robotOn → Status global robot (true = robot nyala, false = mati/standby).
+
