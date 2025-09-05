@@ -302,6 +302,60 @@ function sendCommand(path, callback, errorCallback) {
 - /servo?angle=90 → servo tengah
 
 
+| 9. Fungsi Kontrol Robot | 
+| -------------- |
+
+Fungsi ini mengatur arah gerak robot dengan mengirim kecepatan motor kiri & kanan.
+
+```cpp
+function toggleRobot() { ... }   // ON/OFF robot
+function toggleLineFollower() { ... } // Aktifkan/stop line follower
+function maju() { sendCommand(`/control?left=${getSpeed()}&right=${getSpeed()}`); }
+function mundur() { sendCommand(`/control?left=${-getSpeed()}&right=${-getSpeed()}`); }
+function kiri() { sendCommand(`/control?left=${-getSpeed()}&right=${getSpeed()}`); }
+function kanan() { sendCommand(`/control?left=${getSpeed()}&right=${-getSpeed()}`); }
+function berhentiRobot() { sendCommand(`/control?left=0&right=0`); }
+```
+| 10. Fungsi Servo dan Gripper | 
+| -------------- |
+
+Atur servo arm & gripper sesuai sudut.
+
+```cpp
+function kirimServo(angle) {
+  sendCommand(`/servo?angle=${angle}`);
+}
+function kirimGripper(position) {
+  sendCommand(`/gripper?position=${position}`);
+}
+```
+
+| 11. Fungsi Status dan Koneksi | 
+| -------------- |
+
+Tugasnya kode ini untuk cek koneksi robot & update label status di halaman.
+
+```cpp
+function updateStatusLabel(text, color) { ... }
+function updateConnectionStatus(connected) { ... }
+function testConnection() { ... }
+```
+
+| 12. Inisialisasi Halaman web saat dibuka | 
+| -------------- |
+
+Saat halaman web dibuka, robot default OFF, lalu otomatis tes koneksi ke ESP8266, dan reconnect tiap 10 detik.
+
+```cpp
+window.onload = function() {
+  robotActive = false;
+  updateStatusLabel("❌ Robot Tidak Aktif", "red");
+  testConnection();
+  setInterval(() => { if (!isConnected) testConnection(); }, 10000);
+}
+```
+
+
 
 
 
