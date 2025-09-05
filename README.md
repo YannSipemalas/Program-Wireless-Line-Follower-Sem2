@@ -124,3 +124,192 @@ bool robotOn = false; // Status global robot
 - manualControl → true kalau mode manual (via remote/GUI) dipakai.
 - robotOn → Status global robot (true = robot nyala, false = mati/standby).
 
+
+| 5. Membuat Struktur Halaman Web(HTML)| 
+| -------------- |
+HTML di sini digunakan untuk membuat tampilan web kontrol robot. Semua tombol, slider, label, dan teks ada di dalam HTML.
+```cpp
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kontrol Robot ESP8266</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  ...
+</head>
+<body>
+  <h1>🤖 Kontrol Robot ESP8266</h1>
+  <div class="ip-display" id="ipAddress">IP Robot: 192.168.4.1</div>
+  <div class="connection-status disconnected" id="connectionStatus">Mengecek koneksi...</div>
+
+  <!-- Slider kecepatan -->
+  <input type="range" min="50" max="255" value="150" class="speed-slider" id="kecepatanSlider">
+  <label for="kecepatanSlider" id="kecepatanLabel">Kecepatan: 150</label>
+
+  <!-- Tombol ON/OFF Robot -->
+  <button class="toggle-btn" id="robotOnOffButton" onclick="toggleRobot()">🔴 OFF</button>
+
+  <!-- Kontrol Gerak -->
+  <p class="section-title">🎮 Kontrol Gerak</p>
+  <div class="button-group">
+    <button class="control-btn" id="btnMaju" ...>⬆ Maju</button>
+  </div>
+  <div class="button-group">
+    <button class="control-btn" id="btnKiri" ...>⬅ Kiri</button>
+    <button class="stop-btn" id="btnBerhenti" onclick="berhentiRobot()">⏹ Stop</button>
+    <button class="control-btn" id="btnKanan" ...>➡ Kanan</button>
+  </div>
+  <div class="button-group">
+    <button class="control-btn" id="btnMundur" ...>⬇ Mundur</button>
+  </div>
+
+  <!-- Mode Line Follower -->
+  <button class="mode-btn" id="lineFollowerButton" onclick="toggleLineFollower()">🛤 Mulai Line Follower</button>
+
+  <!-- Kontrol Servo -->
+  <p class="section-title">🦾 Kontrol Servo</p>
+  <div class="button-group">
+    <button class="servo-btn" onclick="kirimServo(150)">⬆ Naik (180°)</button>
+    <button class="servo-btn" onclick="kirimServo(90)">➡ Tengah (90°)</button>
+    <button class="servo-btn" onclick="kirimServo(0)">⬇ Turun (0°)</button>
+  </div>
+
+  <!-- Kontrol Gripper -->
+  <p class="section-title">🤏 Kontrol Gripper</p>
+  <div class="button-group">
+    <button class="gripper-btn" onclick="kirimGripper(90)">✊ TUTUP</button>
+    <button class="gripper-btn" onclick="kirimGripper(180)">🤏 BUKA</button>
+  </div>
+
+  <!-- Status Robot -->
+  <div id="statusLabel">Robot Tidak Aktif</div>
+</body>
+</html>
+```
+- Fungsi HTML ini:
+  
+- (h1) → Sebagai judul halaman.
+- (div) → Menampilkan IP robot & status koneksi.
+- (input type="range") → Slider untuk atur kecepatan.
+- (button) → Tombol untuk kontrol robot (maju, mundur, kiri, kanan, stop).
+- Bagian Servo & Gripper → Tombol untuk mengatur posisi servo & gripper.
+- (div id="statusLabel") → Label status robot.
+
+| 6. Membuat Tampilan Desain(CSS) | 
+| -------------- |
+Kode CSS dipakai untuk mengatur gaya visual (warna, ukuran tombol, background, layout).
+```cpp
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  text-align: center;
+  background-color: #021f3f;
+  color: white;
+  margin: 0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+h1 { color: #FFD700; margin-bottom: 20px; }
+.section-title { color: #ADD8E6; margin-top: 20px; font-size: 1.2em; }
+
+button {
+  width: 100px; height: 50px;
+  margin: 5px; border-radius: 8px;
+  font-size: 1em; font-weight: bold;
+  cursor: pointer; transition: all 0.3s ease;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+}
+button.control-btn { background-color: #FFA500; }
+button.stop-btn { background-color: #DC143C; color: white; }
+button.toggle-btn { background-color: #28a745; color: white; }
+button.toggle-btn.off { background-color: #dc3545; }
+button.mode-btn { background-color: #FFD700; }
+button.servo-btn { background-color: #007bff; color: white; }
+button.gripper-btn { background-color: #9370DB; color: white; }
+
+.speed-slider {
+  width: 80%; max-width: 300px;
+  height: 10px; border-radius: 5px;
+  background: #555;
+}
+.speed-slider::-webkit-slider-thumb {
+  width: 20px; height: 20px;
+  border-radius: 50%; background: #4CAF50;
+}
+.connection-status.connected { background-color: #28a745; color: white; }
+.connection-status.disconnected { background-color: #dc3545; color: white; }
+```
+ Fungsi CSS ini :
+
+- body → Tema utama (warna gelap, teks putih, layout tengah).
+- button-group → Mengatur posisi tombol agar rapi & sejajar.
+- button → Styling tombol (warna, efek klik, shadow).
+- control-btn, .stop-btn, .toggle-btn → Warna tombol beda sesuai fungsi.
+- speed-slider → Slider kecepatan dengan desain custom.
+- connection-status → Label status koneksi (hijau kalau connected, merah kalau putus).
+
+| 7. Logika dan Fungsi Interaktif (JS) | 
+| -------------- |
+JavaScript mengatur fungsi kontrol robot melalui HTTP request ke ESP8266.
+```cpp
+const ROBOT_IP = "192.168.4.1";
+let robotActive = false;
+let lineFollowerActive = false;
+let isConnected = false;
+
+// Elemen UI
+const kecepatanSlider = document.getElementById('kecepatanSlider');
+const kecepatanLabel = document.getElementById('kecepatanLabel');
+const robotOnOffButton = document.getElementById('robotOnOffButton');
+const lineFollowerButton = document.getElementById('lineFollowerButton');
+const statusLabel = document.getElementById('statusLabel');
+const connectionStatus = document.getElementById('connectionStatus');
+```
+ Bagian Variabel & Elemen :
+- ROBOT_IP → IP default robot (mode AP).
+- robotActive → Status robot (nyala/mati).
+- lineFollowerActive → Mode line follower aktif/tidak.
+- isConnected → Status koneksi ke robot.
+- getElementById → Mengambil elemen HTML supaya bisa dimanipulasi lewat JS.
+
+
+| 8. Kode JS Fungsi Utama | 
+| -------------- |
+Kode ini memiliki fungsi untuk mengirim perintah dari webserver ke ESP8266
+```cpp
+int leftSpeed = 0;
+function sendCommand(path, callback, errorCallback) {
+  const url = `http://${ROBOT_IP}${path}`;
+  fetch(url, { method: 'GET', cache: 'no-cache' })
+    .then(response => response.text())
+    .then(data => { if (callback) callback(data); })
+    .catch(error => { if (errorCallback) errorCallback(); });
+}
+```
+ Kirim HTTP GET ke ESP8266, misalnya:
+- /control?left=150&right=150 → maju
+- /servo?angle=90 → servo tengah
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
