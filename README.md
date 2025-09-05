@@ -127,7 +127,9 @@ bool robotOn = false; // Status global robot
 
 | 5. Membuat Struktur Halaman Web(HTML)| 
 | -------------- |
+
 HTML di sini digunakan untuk membuat tampilan web kontrol robot. Semua tombol, slider, label, dan teks ada di dalam HTML.
+
 ```cpp
 <!DOCTYPE html>
 <html>
@@ -197,7 +199,9 @@ HTML di sini digunakan untuk membuat tampilan web kontrol robot. Semua tombol, s
 
 | 6. Membuat Tampilan Desain(CSS) | 
 | -------------- |
+
 Kode CSS dipakai untuk mengatur gaya visual (warna, ukuran tombol, background, layout).
+
 ```cpp
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -253,7 +257,9 @@ button.gripper-btn { background-color: #9370DB; color: white; }
 
 | 7. Logika dan Fungsi Interaktif (JS) | 
 | -------------- |
+
 JavaScript mengatur fungsi kontrol robot melalui HTTP request ke ESP8266.
+
 ```cpp
 const ROBOT_IP = "192.168.4.1";
 let robotActive = false;
@@ -278,7 +284,9 @@ const connectionStatus = document.getElementById('connectionStatus');
 
 | 8. Kode JS Fungsi Utama | 
 | -------------- |
+
 Kode ini memiliki fungsi untuk mengirim perintah dari webserver ke ESP8266
+
 ```cpp
 int leftSpeed = 0;
 function sendCommand(path, callback, errorCallback) {
