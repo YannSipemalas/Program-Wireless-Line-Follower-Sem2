@@ -604,6 +604,130 @@ void followLine() {
 
 ```
 
+| 16. Variabel Kontrol | 
+| -------------- |
+
+Kode ini adalah bagian setup awal robot ESP8266 yang menginisialisasi serial, sensor garis, motor, servo, serta mengatur status awal robot sebelum dijalankan.
+
+- Serial Monitor → menyiapkan komunikasi serial untuk debug dan menampilkan informasi saat robot start.
+- Inisialisasi Pin Sensor → mengatur 5 pin sensor garis sebagai input untuk membaca garis hitam/putih.
+- Inisialisasi Pin Motor → mengatur pin motor sebagai output untuk kendali arah dan kecepatan motor kiri/kanan.
+- Inisialisasi Servo → menyambungkan servo arm dan gripper ke pin ESP8266 agar bisa dikontrol.
+- Posisi Awal Servo → mengatur servo arm dan gripper ke posisi tengah (90°) saat robot dinyalakan.
+- Inisialisasi Status Robot → menetapkan kondisi awal robot (OFF, manual & line follower tidak aktif).
+
+```cpp
+// --- Setup ---
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("\n========================================");
+  Serial.println("🤖 ESP8266 Robot Controller v2.0");
+  Serial.println("========================================");
+
+  // Inisialisasi pin sensor
+  pinMode(S1_sens, INPUT);
+  pinMode(S2_sens, INPUT);
+  pinMode(S3_sens, INPUT);
+  pinMode(S4_sens, INPUT);
+  pinMode(S5_sens, INPUT);
+
+  // Inisialisasi pin motor
+  pinMode(pwmL, OUTPUT);
+  pinMode(pwmR, OUTPUT);
+  pinMode(rotL, OUTPUT);
+  pinMode(rotR, OUTPUT);
+
+  // Inisialisasi servo
+  myServo.attach(servoPin);
+  gripperServo.attach(gripperPin);
+  
+  // Set posisi awal servo
+  myServo.write(90);
+  gripperServo.write(90);
+  delay(1000);
+
+  // Inisialisasi status
+  robotOn = false;
+  manualControl = false;
+  lineFollowerActive = false;
+```
+
+
+| 17. Variabel Kontrol | 
+| -------------- |
+
+Kode ini berfungsi untuk mengatur ESP8266 agar membuat WiFi Access Point sehingga robot bisa diakses langsung tanpa router. Setelah itu, ESP8266 menjalankan web server dengan berbagai route (control, line follower, servo, gripper, toggle) untuk menerima perintah dari browser.
+
+- ControlMotor → memastikan motor mati saat awal start.
+- WiFi AP → membuat Access Point dengan SSID & password lalu menampilkan IP.
+- Web Server Routes → menentukan alamat URL untuk kontrol manual, line follower, servo, gripper, toggle robot, dan halaman utama.
+- Start Server → menjalankan web server agar siap menerima request.
+- Serial Monitor → menampilkan status dan informasi akses web robot.
+
+```cpp
+  controlMotors(0, 0);
+
+  // Setup WiFi Access Point
+  Serial.println("📡 Mengatur WiFi Access Point...");
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ssid_ap, password_ap);
+  
+  IPAddress IP = WiFi.softAPIP();
+  Serial.print("📶 AP IP Address: ");
+  Serial.println(IP);
+  Serial.printf("📶 SSID: %s\n", ssid_ap);
+  Serial.printf("🔐 Password: %s\n", password_ap);
+
+  // Setup web server routes
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/control", HTTP_GET, handleControl);
+  server.on("/linefollower", HTTP_GET, handleLineFollower);
+  server.on("/servo", HTTP_GET, handleServo);
+  server.on("/gripper", HTTP_GET, handleGripper);
+  server.on("/toggleRobot", HTTP_GET, handleToggleRobot);
+  server.onNotFound(handleNotFound);
+
+  // Start server
+  server.begin();
+  Serial.println("🌐 Web server dimulai!");
+  Serial.println("========================================");
+  Serial.println("✅ Robot siap digunakan!");
+  Serial.printf("🔗 Buka browser: http://%s\n", IP.toString().c_str());
+  Serial.println("========================================");
+}
+bool robotOn = false; // Status global robot
+```
+
+
+| 18. Fungsi Loop utama | 
+| -------------- |
+
+Kode ini adalah loop utama robot ESP8266 yang menjalankan server web dan logika kontrol robot secara terus-menerus.
+
+- server.handleClient(); → Menangani setiap request HTTP yang masuk dari web browser.
+- if (robotOn) → Mengecek apakah robot aktif atau tidak.
+- if (manualControl) → Jika mode manual aktif, robot dikendalikan sesuai input kecepatan kiri dan kanan.
+- else if (lineFollowerActive) → Jika mode line follower aktif, robot mengikuti garis dengan fungsi followLine().
+- else atau robotOn == false → Robot berhenti dengan controlMotors(0, 0).
+```cpp
+// --- Loop Utama ---
+void loop() {
+  server.handleClient();
+
+  if (robotOn) {
+    if (manualControl) {
+      controlMotors(leftSpeed, rightSpeed);
+    } else if (lineFollowerActive) {
+      followLine();
+    } else {
+      controlMotors(0, 0);
+    }
+  } else {
+    controlMotors(0, 0);
+  }
+  
+```
 
 
 
