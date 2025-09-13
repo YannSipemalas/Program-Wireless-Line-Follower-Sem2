@@ -360,7 +360,7 @@ window.onload = function() {
 
 Pada kode program ini memiliki fungsi untuk mengatur kecepatan & arah motor kiri/kanan. Fungsi ini dipanggil baik dari kontrol wireless maupun line follower.
 
-- left & right = nilai PWM (-255 sampai 255).
+- left & right = nilai PWM (0 sampai 255).
    - Positif → maju.
    - Negatif → mundur.
    - Nol → berhenti.
