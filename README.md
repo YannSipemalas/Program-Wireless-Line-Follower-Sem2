@@ -355,9 +355,252 @@ window.onload = function() {
 }
 ```
 
-| 13.  | 
+| 13. Fungsi Kontrol Motor | 
 | -------------- |
+
+Pada kode program ini memiliki fungsi untuk mengatur kecepatan & arah motor kiri/kanan. Fungsi ini dipanggil baik dari kontrol wireless maupun line follower.
+
+- left & right = nilai PWM (-255 sampai 255).
+   - Positif → maju.
+   - Negatif → mundur.
+   - Nol → berhenti.
+- Serial.printf dipakai untuk debug (menampilkan nilai motor di Serial Monitor).
+
 ```cpp
+// --- Fungsi Kontrol Motor ---
+void controlMotors(int left, int right) {
+  if (!robotOn && !lineFollowerActive) {
+    analogWrite(pwmL, 0);
+    analogWrite(pwmR, 0);
+    digitalWrite(rotL, LOW);
+    digitalWrite(rotR, LOW);
+    return;
+  }
+  
+  // Motor Kiri
+  if (left > 0) {
+    digitalWrite(rotL, HIGH);
+    analogWrite(pwmL, constrain(left, 0, 255));
+  } else if (left < 0) {
+    digitalWrite(rotL, LOW);
+    analogWrite(pwmL, constrain(-left, 0, 255));
+  } else {
+    analogWrite(pwmL, 0);
+  }
+
+  // Motor Kanan
+  if (right > 0) {
+    digitalWrite(rotR, HIGH);
+    analogWrite(pwmR, constrain(right, 0, 255));
+  } else if (right < 0) {
+    digitalWrite(rotR, LOW);
+    analogWrite(pwmR, constrain(-right, 0, 255));
+  } else {
+    analogWrite(pwmR, 0);
+  }
+
+  Serial.printf("Motor - Kiri: %d, Kanan: %d\n", left, right);
+}
+```
+
+
+
+| 14. Handle Web Server| 
+| -------------- |
+
+Apa fungsi Handle??
+Handle adalah fungsi yang dijalankan saat ada request HTTP ke alamat tertentu di web server ESP8266.
+
+Jadi: tiap handle() = merupakan penghubung antara perintah dari browser dengan pergerakan robot.
+
+Dalam Kode program ini ada banyak handle yang saya buat untuk dipanggil saat ada request http ke ip yang sudah saya buat (192.168.4.1).
+ - handleRoot()
+   - Menampilkan halaman utama (HTML).
+   - Kalau user buka http://IP/, halaman UI robot akan muncul.
+ - handleControl()
+   - Untuk kontrol manual motor (parameter left & right).
+   - Kalau robot ON, motor dikontrol sesuai pengaturan kita.
+ - handleLineFollower()
+   - Untuk mengaktifkan / menonaktifkan mode line follower.
+   - Menampilkan status=on → aktif, status=off → nonaktif.
+ - handleServo/Arm()
+   - Untuk mengatur servo arm posisi 0 = turun, 90 = Angkat, 180 = Arm tegak ke atas
+ - handleGripper()
+   - Mengatur servo gripper (posisi buka/tutup).
+ - handleGripper()
+   - Mengatur servo gripper (posisi buka/tutup).
+ - handleToggleRobot()
+   - Untuk menghidupkan atau mematikan robot.
+   - Kalau OFF → motor berhenti, servo reset ke 90°.
+ - handleNotFound()
+   - Menangani request URL yang salah (404).   
+```cpp
+// --- Handler Web Server ---
+void handleRoot() {
+  server.send_P(200, "text/html", INDEX_HTML);
+  Serial.println("Halaman utama diminta");
+}
+
+void handleControl() {
+  if (!robotOn) {
+    server.send(403, "text/plain", "Robot tidak aktif");
+    return;
+  }
+  
+  if (server.hasArg("left") && server.hasArg("right")) {
+    leftSpeed = constrain(server.arg("left").toInt(), -255, 255);
+    rightSpeed = constrain(server.arg("right").toInt(), -255, 255);
+    manualControl = true;
+    lineFollowerActive = false;
+    
+    Serial.printf("Kontrol Manual: Kiri=%d, Kanan=%d\n", leftSpeed, rightSpeed);
+    server.send(200, "text/plain", "OK");
+  } else {
+    server.send(400, "text/plain", "Parameter hilang");
+  }
+}
+
+void handleLineFollower() {
+  if (!robotOn) {
+    server.send(403, "text/plain", "Kamu Nanya Kenapa Robot tidak aktif");
+    return;
+  }
+  
+  if (server.hasArg("status")) {
+    String status = server.arg("status");
+    if (status == "on") {
+      lineFollowerActive = true;
+      manualControl = false;
+      Serial.println("Line Follower: ON");
+      server.send(200, "text/plain", "Line follower aktif");
+    } else if (status == "off") {
+      lineFollowerActive = false;
+      manualControl = false;
+      controlMotors(0, 0);
+      Serial.println("Line Follower: OFF");
+      server.send(200, "text/plain", "Line follower nonaktif");
+    } else {
+      server.send(400, "text/plain", "Status tidak valid");
+    }
+  } else {
+    server.send(400, "text/plain", "Parameter status hilang");
+  }
+}
+
+void handleServo() {
+  if (!robotOn) {
+    server.send(403, "text/plain", "Robot tidak aktif");
+    return;
+  }
+  
+  if (server.hasArg("angle")) {
+    int angle = constrain(server.arg("angle").toInt(), 0, 180);
+    myServo.write(angle);
+    Serial.printf("Servo: %d derajat\n", angle);
+    server.send(200, "text/plain", "Servo diatur");
+  } else {
+    server.send(400, "text/plain", "Parameter angle hilang");
+  }
+}
+
+void handleGripper() {
+  if (!robotOn) {
+    server.send(403, "text/plain", "Robot tidak aktif");
+    return;
+  }
+  
+  if (server.hasArg("position")) {
+    int position = constrain(server.arg("position").toInt(), 0, 180);
+    gripperServo.write(position);
+    Serial.printf("Gripper: %d derajat\n", position);
+    server.send(200, "text/plain", "Gripper diatur");
+  } else {
+    server.send(400, "text/plain", "Parameter position hilang");
+  }
+}
+
+void handleToggleRobot() {
+  if (server.hasArg("status")) {
+    String status = server.arg("status");
+    if (status == "on") {
+      robotOn = true;
+      Serial.println("🟢 ROBOT ON");
+      server.send(200, "text/plain", "Robot diaktifkan");
+    } else if (status == "off") {
+      robotOn = false;
+      manualControl = false;
+      lineFollowerActive = false;
+      controlMotors(0, 0);
+      myServo.write(90);
+      gripperServo.write(90);
+      Serial.println("🔴 ROBOT OFF");
+      server.send(200, "text/plain", "Robot dinonaktifkan");
+    } else {
+      server.send(400, "text/plain", "Status tidak valid");
+    }
+  } else {
+    server.send(400, "text/plain", "Parameter status hilang");
+  }
+}
+
+void handleNotFound() {
+  String message = "Halaman tidak ditemukan\n\nURI: ";
+  message += server.uri();
+  message += "\nMethod: ";
+  message += (server.method() == HTTP_GET) ? "GET" : "POST";
+  message += "\nArguments: ";
+  message += server.args();
+  message += "\n";
+  
+  for (uint8_t i = 0; i < server.args(); i++) {
+    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+  }
+  
+  server.send(404, "text/plain", message);
+  Serial.println("404 - " + server.uri());
+}
+```
+
+| 15. Fungsi Line Follower | 
+| -------------- |
+
+Kode ini berisi logika sederhana line follower.
+-  Robot membaca garis hitam/putih dengan 5 sensor.
+-  Jika tombol "Line Follower" di web ditekan ON, maka robot masuk ke mode mengikuti garis.
+-  Dalam mode ini, robot akan:
+   - Maju lurus kalau sensor 3 (tengah) aktif.
+   - Belok kiri kalau sensor 1 dan 2 aktif.
+   - Belok kanan kalau sensor 4 dan 5 aktif.
+   - Berhenti kalau tidak ada garis yang terdeteksi.
+```cpp
+void followLine() {
+  if (!lineFollowerActive || !robotOn) {
+    controlMotors(0, 0);
+    return;
+  }
+  
+  bool s1 = digitalRead(S1_sens);
+  bool s2 = digitalRead(S2_sens);
+  bool s3 = digitalRead(S3_sens);
+  bool s4 = digitalRead(S4_sens);
+  bool s5 = digitalRead(S5_sens);
+  
+  Serial.printf("Sensor: %d %d %d %d %d\n", s1, s2, s3, s4, s5);
+  
+  if (s3) {
+    // Tengah - maju lurus
+    controlMotors(FORWARD_SPEED_LF, FORWARD_SPEED_LF);
+  } else if (s2 || s1) {
+    // Kiri - belok kiri
+    controlMotors(0, TURN_SPEED_LF);
+  } else if (s4 || s5) {
+    // Kanan - belok kanan
+    controlMotors(TURN_SPEED_LF, 0);
+  } else {
+    // Tidak ada garis - berhenti
+    controlMotors(0, 0);
+  }
+}
 
 ```
 
